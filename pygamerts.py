@@ -314,6 +314,55 @@ class VectorSprite(pygame.sprite.Sprite):
                 self.pos.y = 0
 
 
+class Catapult(VectorSprite):
+    
+    def _overwrite_parameters(self):
+        self.kill_on_edge = False
+        self.survive_north = True
+        #self.pos.y = -Viewer.height //2
+        #self.pos.x = Viewer.width //2
+       
+        self.imagenames = ["catapult1"]
+        self.speed  = 7
+        self.turnspeed = 0.5
+            
+            
+    def create_image(self):
+        self.image=Viewer.images["catapult1"]
+        
+        self.image0 = self.image.copy()
+       # self.image0.set_colorkey((0,0,0))
+       # self.image0.convert_alpha()
+        self.rect = self.image.get_rect()
+
+    def kill(self):
+        Explosion(posvector=self.pos, red=200, red_delta=25, minsparks=500, maxsparks=600, maxlifetime=7)
+        VectorSprite.kill(self)
+   
+   
+    def update(self,seconds):
+        VectorSprite.update(self,seconds)
+        # - - - - - - go to mouse cursor ------ #
+        target = mouseVector()
+        dist =target - self.pos
+        try:
+            dist.normalize_ip() #schrupmft ihn zur länge 1
+        except:
+            print("i could not normalize", dist)
+            return
+        dist *= self.speed  
+        rightvector = pygame.math.Vector2(1,0)
+        angle = -dist.angle_to(rightvector)
+        #print(angle)
+        #if self.angle == round(angle, 0):
+        if self.selected:
+            self.move = dist
+            self.set_angle(angle)
+            pygame.draw.rect(self.image, (0,200,0), (0,0,self.rect.width, self.rect.height),1)
+
+
+
+
 class Turret(VectorSprite):
     
     def _overwrite_parameters(self):
@@ -321,18 +370,46 @@ class Turret(VectorSprite):
         self.images = [] # list of images, biggest first, than always zoomed out
         self.original_width = 64
         self.original_height = 64
-
-        
+        self._layer = 4
     def create_image(self):
-        """create biggest possible image"""
-        self.image = pygame.surface.Surface((self.original_width, self.original_height))
-        pygame.draw.circle(self.image, (128,0,128), (self.original_width //2, self.original_height // 2), self.original_width//2)
-        self.image.set_colorkey((0,0,0))
-        self.image.convert_alpha()
+        self.image=Viewer.images["etwas1"]
         self.image0 = self.image.copy()
         self.rect = self.image.get_rect()
-        img = self.image.copy()
-        self.make_images()
+
+
+class Stationarycatapult(Catapult):
+        
+    def create_image(self):
+        self.image=Viewer.images["CatapultC1"]
+        self.image0 = self.image.copy()
+        self.rect = self.image.get_rect()
+    
+    def update(self,seconds):
+        VectorSprite.update(self,seconds) 
+        # - - - - - - chance to rotate - - - - #
+        if random.random() < 0.01:
+            self.rotate(random.choice((-10, -10, -5,-5,-5,5,5,5,10,10)))
+        # -- - - - -- chance to fire  --- -#
+        if random.random() < 0.01:
+            p = pygame.math.Vector2(self.pos.x, self.pos.y)
+            m = pygame.math.Vector2(1,0)
+            m.rotate_ip(self.angle)
+            m *= 150    
+            Bullet(pos=p,move=m, angle= self.angle, bossnumber=self.number)
+        
+        
+        
+        
+        #"""create biggest possible image"""
+        #self.image = pygame.surface.Surface((self.original_width, self.original_height))
+        #pygame.draw.circle(self.image, (128,0,128), (self.original_width //2, self.original_height // 2), self.original_width//2)
+        #self.image.set_colorkey((0,0,0))
+        #self.image.convert_alpha()def update(self,seconds):
+        #VectorSprite.update(self,seconds)
+        #self.image0 = self.image.copy()
+        #self.rect = self.image.get_rect()
+        #img = self.image.copy()
+        #self.make_images()
       
 
 
@@ -351,7 +428,7 @@ class Javelin(VectorSprite):
         self.rect = self.image.get_rect()
 
 class Cannonball(VectorSprite):
-    """3d sprite"""
+    
     
     def _overwrite_parameters(self):
         self.speed = 3
@@ -363,7 +440,7 @@ class Cannonball(VectorSprite):
         self.image = pygame.surface.Surface((20,20))    
         z = min(255, self.pos3.z)
         z= max(0, self.pos3.z)
-        pygame.draw.circle(self.image, (0,0,z), (10,10),10)
+        pygame.draw.circle(self.image, (0,0,z), (10,10),8)
         self.image.set_colorkey((0,0,0))
         self.image.convert_alpha()
         self.image0 = self.image.copy()
@@ -382,6 +459,28 @@ class Cannonball(VectorSprite):
         oldcenter = self.rect.center
         self.create_image()
         self.rect.center = oldcenter
+        
+
+class Bullet(VectorSprite):
+    """3d sprite"""
+    
+    def _overwrite_parameters(self):
+        self.speed = 100
+        self.max_age = 10
+        
+    
+    def create_image(self):
+        self.image = Viewer.images["Rock"]
+        self.image.set_colorkey((0,0,0))
+        self.image0 = self.image.copy()
+        self.rect = self.image.get_rect()
+        
+    def update(self, seconds):
+        VectorSprite.update(self, seconds)
+        oldcenter = self.rect.center
+        self.create_image()
+        self.rect.center = oldcenter
+        
         #print(self.pos3, self.move3)
 
 class TileCursor(VectorSprite):
@@ -460,54 +559,6 @@ class Tile(VectorSprite):
         self.rect = self.image.get_rect()
         
          
-
-class Catapult(VectorSprite):
-    
-    def _overwrite_parameters(self):
-        self.kill_on_edge = False
-        self.survive_north = True
-        #self.pos.y = -Viewer.height //2
-        #self.pos.x = Viewer.width //2
-       
-        self.imagenames = ["catapult1"]
-        self.speed  = 7
-        self.turnspeed = 0.5
-            
-            
-    def create_image(self):
-        self.image=Viewer.images["catapult1"]
-        
-        self.image0 = self.image.copy()
-       # self.image0.set_colorkey((0,0,0))
-       # self.image0.convert_alpha()
-        self.rect = self.image.get_rect()
-
-    def kill(self):
-        Explosion(posvector=self.pos, red=200, red_delta=25, minsparks=500, maxsparks=600, maxlifetime=7)
-        VectorSprite.kill(self)
-   
-   
-    def update(self,seconds):
-        VectorSprite.update(self,seconds)
-        # - - - - - - go to mouse cursor ------ #
-        target = mouseVector()
-        dist =target - self.pos
-        try:
-            dist.normalize_ip() #schrupmft ihn zur länge 1
-        except:
-            print("i could not normalize", dist)
-            return
-        dist *= self.speed  
-        rightvector = pygame.math.Vector2(1,0)
-        angle = -dist.angle_to(rightvector)
-        #print(angle)
-        #if self.angle == round(angle, 0):
-        if self.selected:
-            self.move = dist
-            self.set_angle(angle)
-            pygame.draw.rect(self.image, (0,200,0), (0,0,self.rect.width, self.rect.height),1)
-
-
 
 class Flytext(VectorSprite):
     
@@ -728,17 +779,20 @@ class Viewer(object):
     def load_sprites(self):
             """ all sprites that can rotate MUST look to the right. Edit Image files manually if necessary!"""
             print("loading sprites from 'data' folder....")
-            Viewer.images["catapult1"]= pygame.image.load(
+            Viewer.images["CatapultC1"]= pygame.image.load(
                  os.path.join("data", "catapultC1.png")).convert_alpha()
-            
+            Viewer.images["etwas1"] = pygame.image.load(
+                 os.path.join("data","etwas1.png")).convert_alpha()
+            Viewer.images["Rock"] = pygame.image.load(
+                 os.path.join("data", "catapultrock.png")).convert_alpha()
             ##self.create_selected("catapult1")
             
-            Viewer.images["ballista1"] = pygame.image.load(os.path.join("data", "ballistaB1.png"))
+            #Viewer.images["ballista1"] = pygame.image.load(os.path.join("data", "ballistaB1.png"))
             # --- scalieren ---
-            #for name in Viewer.images:
-            #    if name == "bossrocket":
-            #        Viewer.images[name] = pygame.transform.scale(
-            #                        Viewer.images[name], (60, 60))
+            for name in Viewer.images:
+                if name == "Rock":
+                    Viewer.images[name] = pygame.transform.scale(
+                                    Viewer.images[name], (25, 25))
             
             
             
@@ -751,7 +805,7 @@ class Viewer(object):
      
     def prepare_sprites(self):
         """painting on the surface and create sprites"""
-        #self.load_sprites()
+        self.load_sprites()
         #self.zoom_sprites()
         self.allgroup =  pygame.sprite.LayeredUpdates() # for drawing
         self.flytextgroup = pygame.sprite.Group()
@@ -762,7 +816,8 @@ class Viewer(object):
         #Tile.groups = self.allgroup
         Flytext.groups = self.allgroup, self.flytextgroup
         Turret.groups = self.allgroup, self.worldgroup, self.radargroup
-        
+        Stationarycatapult.groups = self.allgroup, self.worldgroup
+        Bullet.groups = self.allgroup, self.worldgroup
         #Catapult.groups = self.allgroup,
         
         # --- tile cursor (number 0) ---
@@ -774,7 +829,7 @@ class Viewer(object):
         #self.c1 = Catapult()
         for (x,y) in ((200,300), (800,300), (800, 800), (200,800), (500,550)):
             Turret(pos=pygame.math.Vector2(x,-y))
-   
+            Stationarycatapult(pos = pygame.math.Vector2(x,-y))
     
     
        
@@ -1135,6 +1190,10 @@ class Viewer(object):
                         m = pygame.math.Vector2(200,0)
                         m.rotate_ip(self.c1.angle)
                         Cannonball(pos=p, move=m, bossnumber= self.c1.number)
+                    if event.key == pygame.K_y:
+                        Bullet()
+                    
+                    
                     if event.key == pygame.K_PLUS:
                         self.worldzoom(1)
                     if event.key == pygame.K_MINUS:
